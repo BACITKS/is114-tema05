@@ -116,7 +116,6 @@ def select_barn(b_pnr):
     
 # --- Skriv kode for select_soknad her
 
-
 # ------------------
 # Update
 

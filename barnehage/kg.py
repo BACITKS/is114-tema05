@@ -26,15 +26,36 @@ def behandle():
         print(sd)
         log = insert_soknad(form_to_object_soknad(sd))
         print(log)
+        
+        # Legg til logikk
+        antall_ledige_plasser = 5 
+        fortrinnsrett_grunner = [
+            sd.get('fortrinnsrett_barnevern') == 'on',
+            sd.get('fortrinnsrett_sykdom_familien') == 'on',
+            sd.get('fortrinnsrett_sykdom_barnet') == 'on',
+            sd.get('fortrinnsrett_annet') == 'on'
+        ]
+        har_fortrinnsrett = any(fortrinnsrett_grunner)
+
+        # Bestem resultatet basert på ledige plasser og fortrinnsrett
+        if antall_ledige_plasser > 0 or har_fortrinnsrett:
+            resultat = "TILBUD"
+        else:
+            resultat = "AVSLAG"
+
         session['information'] = sd
-        return redirect(url_for('svar')) #[1]
+        session['resultat'] = resultat  # Lagre resultatet i session
+        return redirect(url_for('svar'))
     else:
         return render_template('soknad.html')
 
+
 @app.route('/svar')
 def svar():
-    information = session['information']
-    return render_template('svar.html', data=information)
+    information = session.get('information', {})
+    resultat = session.get('resultat', "AVSLAG")  # Hent resultatet fra session
+    return render_template('svar.html', data=information, resultat=resultat)
+
 
 @app.route('/commit')
 def commit():
