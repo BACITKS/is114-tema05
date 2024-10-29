@@ -4,7 +4,7 @@
 <h2>Resultat av søknad</h2>
 {% if resultat == "TILBUD" %}
 	<p>Gratulerer! Du har fått tilbud om plass i barnehagen.</p>
-{% if resultat == "AVSLAG" %}
+{% else resultat == "AVSLAG" %}
 	<p>Beklager, det er for øyeblikket ingen ledige plasser. Søknaden er avslått.</p>
 {% endif %}
 {% endblock %}

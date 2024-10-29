@@ -58,9 +58,10 @@ def hent_alle_soeknader():
 
     for row in sheet.iter_rows(min_row=2, values_only=True):
         soeknad = {
-            'navn_foresatt': row[0],
-            'adresse': row[1],
-            'telefon': row[2],
+            'barnehage_id': row[0],      # Assuming the first column is the daycare ID
+            'navn_foresatt': row[1],     # Second column is the applicant's name
+            'adresse': row[2],           # Third column is the address
+            'telefon': row[3],           
         }
         soeknader.append(soeknad)
 
@@ -84,6 +85,7 @@ def hent_alle_barnehager():
     
 @app.route('/soeknader')
 def soeknader():
+    # Define the daycare centers with their available spots
     barnehager = [
         {'id': 1, 'navn': 'Sunshine Preschool', 'antall_plasser': 50, 'antall_ledige_plasser': 15},
         {'id': 2, 'navn': 'Happy Days Nursery', 'antall_plasser': 25, 'antall_ledige_plasser': 2},
@@ -94,23 +96,24 @@ def soeknader():
         {'id': 7, 'navn': 'Playful Pals Daycare', 'antall_plasser': 40, 'antall_ledige_plasser': 6},
     ]
 
+    # Fetch applications, with each application specifying the desired daycare
     soeknader = hent_alle_soeknader()
 
     for soeknad in soeknader:
         barnehage_id = soeknad.get('barnehage_id')
-        
-        # Ensure we find a matching daycare and that it has available spots
+
+        # Find the specific daycare the application is targeting
         valgt_barnehage = next((b for b in barnehager if b['id'] == barnehage_id), None)
 
-        if valgt_barnehage is not None:
-            if valgt_barnehage['antall_ledige_plasser'] > 0:
-                soeknad['status'] = "TILBUD"
-                valgt_barnehage['antall_ledige_plasser'] -= 1
-            else:
-                soeknad['status'] = "AVSLAG"
+        if valgt_barnehage and valgt_barnehage['antall_ledige_plasser'] > 0:
+            # Assign "TILBUD" status and decrement available spots
+            soeknad['status'] = "TILBUD"
+            valgt_barnehage['antall_ledige_plasser'] -= 1
         else:
+            # Assign "AVSLAG" if no spots are available
             soeknad['status'] = "AVSLAG"
 
+    # Render the results in the soeknader.html template
     return render_template('soeknader.html', soeknader=soeknader)
 
 
