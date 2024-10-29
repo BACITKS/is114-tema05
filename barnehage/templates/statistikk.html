@@ -13,9 +13,14 @@
     <p style="color: red;">{{ error }}</p>
 {% endif %}
 
-{% if chart_html %}
+{% if chart_json %}
     <h3>Utvikling for kommune: {{ kommune }}</h3>
-    <div>{{ chart_html | safe }}</div>
+    <div id="chart"></div>
+    <script type="text/javascript">
+        // Integrer Vega-Embed for å vise grafen
+        var chartData = {{ chart_json | safe }};
+        vegaEmbed('#chart', chartData).catch(console.error);
+    </script>
 {% endif %}
 
 {% endblock %}

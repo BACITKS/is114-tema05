@@ -172,7 +172,7 @@ def svar():
 
 @app.route('/statistikk', methods=['GET', 'POST'])
 def statistikk():
-    chart_html = None
+    chart_json = None
     kommune = None
 
     if request.method == 'POST':
@@ -182,35 +182,37 @@ def statistikk():
         
         try:
             # Les data fra Excel
-            df = pd.read_excel(filsti, sheet_name='Sheet1')  # Sjekk at 'Sheet1' er korrekt
+            df = pd.read_excel(filsti, sheet_name='Sheet1')
             print("Excel-fil lastet inn vellykket")
 
-            # Filtrer data for valgt kommune og relevante kolonner
+            # Filtrer data for valgt kommune
             df_kommune = df[df['Kommune'] == kommune]
             if df_kommune.empty:
                 print(f"Ingen data funnet for kommunen: {kommune}")
-                return render_template('statistikk.html', chart_html=None, kommune=kommune, error=f"Ingen data funnet for {kommune}")
+                return render_template('statistikk.html', chart_json=None, kommune=kommune, error=f"Ingen data funnet for {kommune}")
 
-            df_kommune = df_kommune[['År', 'Barn_1-2_år']]  # Sjekk at kolonnenavnene stemmer
-            print(f"Data filtrert for {kommune}: \n{df_kommune}")
+            # Konverter kolonneoverskriftene (år) til rader og sett opp data for Altair
+            df_kommune = df_kommune.melt(id_vars=["Kommune"], var_name="År", value_name="Andel barn 1-2 år i barnehage")
+            df_kommune = df_kommune.dropna()  # Fjern rader med NaN-verdier
 
             # Generer Altair-graf
             chart = alt.Chart(df_kommune).mark_line().encode(
                 x='År:O',
-                y='Barn_1-2_år:Q'
+                y='Andel barn 1-2 år i barnehage:Q',
+                tooltip=['År', 'Andel barn 1-2 år i barnehage']
             ).properties(
-                title=f"Utvikling i antall barn (1-2 år) i {kommune}"
-            )
+                title=f"Utvikling i andel barn (1-2 år) i barnehage i {kommune} (2015-2023)"
+            ).interactive()
 
-            # Konverter graf til HTML
-            chart_html = chart.to_html()
-            print("Graf generert vellykket")
+            # Konverter graf til JSON for å sende til HTML
+            chart_json = chart.to_json()
+            print("Graf generert og konvertert til JSON vellykket")
 
         except Exception as e:
             print(f"En feil oppstod: {e}")
-            return render_template('statistikk.html', chart_html=None, kommune=kommune, error=str(e))
+            return render_template('statistikk.html', chart_json=None, kommune=kommune, error=str(e))
 
-    return render_template('statistikk.html', chart_html=chart_html, kommune=kommune)
+    return render_template('statistikk.html', chart_json=chart_json, kommune=kommune)
 
 
 
