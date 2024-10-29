@@ -177,27 +177,41 @@ def statistikk():
 
     if request.method == 'POST':
         kommune = request.form['kommune']
+        print(f"Kommune valgt: {kommune}")  # Sjekk at kommunen hentes riktig
         filsti = r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm"
         
-        # Les data fra Excel
-        df = pd.read_excel(filsti, sheet_name='Sheet1')  # Tilpass 'Sheet1' hvis nødvendig
-        
-        # Filtrer data for valgt kommune og relevante kolonner
-        df_kommune = df[df['Kommune'] == kommune]  # Forutsetter at kolonnen heter 'Kommune'
-        df_kommune = df_kommune[['År', 'Barn_1-2_år']]  # Tilpass kolonnenavn hvis nødvendig
+        try:
+            # Les data fra Excel
+            df = pd.read_excel(filsti, sheet_name='Sheet1')  # Sjekk at 'Sheet1' er korrekt
+            print("Excel-fil lastet inn vellykket")
 
-        # Generer Altair-graf
-        chart = alt.Chart(df_kommune).mark_line().encode(
-            x='År:O',
-            y='Barn_1-2_år:Q'
-        ).properties(
-            title=f"Utvikling i antall barn (1-2 år) i {kommune}"
-        )
+            # Filtrer data for valgt kommune og relevante kolonner
+            df_kommune = df[df['Kommune'] == kommune]
+            if df_kommune.empty:
+                print(f"Ingen data funnet for kommunen: {kommune}")
+                return render_template('statistikk.html', chart_html=None, kommune=kommune, error=f"Ingen data funnet for {kommune}")
 
-        # Konverter graf til HTML
-        chart_html = chart.to_html()
+            df_kommune = df_kommune[['År', 'Barn_1-2_år']]  # Sjekk at kolonnenavnene stemmer
+            print(f"Data filtrert for {kommune}: \n{df_kommune}")
+
+            # Generer Altair-graf
+            chart = alt.Chart(df_kommune).mark_line().encode(
+                x='År:O',
+                y='Barn_1-2_år:Q'
+            ).properties(
+                title=f"Utvikling i antall barn (1-2 år) i {kommune}"
+            )
+
+            # Konverter graf til HTML
+            chart_html = chart.to_html()
+            print("Graf generert vellykket")
+
+        except Exception as e:
+            print(f"En feil oppstod: {e}")
+            return render_template('statistikk.html', chart_html=None, kommune=kommune, error=str(e))
 
     return render_template('statistikk.html', chart_html=chart_html, kommune=kommune)
+
 
 
 @app.route('/commit')

@@ -9,6 +9,10 @@
     <button type="submit">Vis Statistikk</button>
 </form>
 
+{% if error %}
+    <p style="color: red;">{{ error }}</p>
+{% endif %}
+
 {% if chart_html %}
     <h3>Utvikling for kommune: {{ kommune }}</h3>
     <div>{{ chart_html | safe }}</div>
