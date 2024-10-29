@@ -52,7 +52,7 @@ def behandle():
 import openpyxl
 
 def hent_alle_soeknader():
-    workbook = openpyxl.load_workbook('barnehage/kgdata.xlsx')
+    workbook = openpyxl.load_workbook(r"C:\oblig5\is114-tema05\barnehage\kgdata.xlsx")
     sheet = workbook.active
     soeknader = []
 
@@ -66,20 +66,53 @@ def hent_alle_soeknader():
 
     return soeknader
 
+def hent_alle_barnehager():
+    workbook = openpyxl.load_workbook('C:\\oblig5\\is114-tema05\\barnehage\\kgdata.xlsx')
+    sheet = workbook.active
+    barnehager = []
+
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        barnehage = {
+            'id': row[0],                        # ID
+            'navn': row[1],                      # Navn
+            'antall_plasser': row[2],            # Total # plasser
+            'antall_ledige_plasser': row[3],     # tilgjengelige plasser
+        }
+        barnehager.append(barnehage)
+
+    return barnehager
     
 @app.route('/soeknader')
 def soeknader():
+    barnehager = [
+        {'id': 1, 'navn': 'Sunshine Preschool', 'antall_plasser': 50, 'antall_ledige_plasser': 15},
+        {'id': 2, 'navn': 'Happy Days Nursery', 'antall_plasser': 25, 'antall_ledige_plasser': 2},
+        {'id': 3, 'navn': '123 Learning Center', 'antall_plasser': 35, 'antall_ledige_plasser': 4},
+        {'id': 4, 'navn': 'ABC Kindergarten', 'antall_plasser': 12, 'antall_ledige_plasser': 0},
+        {'id': 5, 'navn': 'Tiny Tots Academy', 'antall_plasser': 15, 'antall_ledige_plasser': 5},
+        {'id': 6, 'navn': 'Giggles and Grins Childcare', 'antall_plasser': 10, 'antall_ledige_plasser': 0},
+        {'id': 7, 'navn': 'Playful Pals Daycare', 'antall_plasser': 40, 'antall_ledige_plasser': 6},
+    ]
+
     soeknader = hent_alle_soeknader()
-    antall_ledige_plasser = hent_ledige_plasser()
 
     for soeknad in soeknader:
-        if antall_ledige_plasser > 0:
-            soeknad['status'] = "TILBUD"
-            antall_ledige_plasser -= 1
+        barnehage_id = soeknad.get('barnehage_id')
+        
+        # Ensure we find a matching daycare and that it has available spots
+        valgt_barnehage = next((b for b in barnehager if b['id'] == barnehage_id), None)
+
+        if valgt_barnehage is not None:
+            if valgt_barnehage['antall_ledige_plasser'] > 0:
+                soeknad['status'] = "TILBUD"
+                valgt_barnehage['antall_ledige_plasser'] -= 1
+            else:
+                soeknad['status'] = "AVSLAG"
         else:
             soeknad['status'] = "AVSLAG"
 
     return render_template('soeknader.html', soeknader=soeknader)
+
 
 
 
