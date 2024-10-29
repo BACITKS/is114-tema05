@@ -49,6 +49,39 @@ def behandle():
     else:
         return render_template('soknad.html')
 
+import openpyxl
+
+def hent_alle_soeknader():
+    workbook = openpyxl.load_workbook('barnehage/kgdata.xlsx')
+    sheet = workbook.active
+    soeknader = []
+
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        soeknad = {
+            'navn_foresatt': row[0],
+            'adresse': row[1],
+            'telefon': row[2],
+        }
+        soeknader.append(soeknad)
+
+    return soeknader
+
+    
+@app.route('/soeknader')
+def soeknader():
+    soeknader = hent_alle_soeknader()
+    antall_ledige_plasser = hent_ledige_plasser()
+
+    for soeknad in soeknader:
+        if antall_ledige_plasser > 0:
+            soeknad['status'] = "TILBUD"
+            antall_ledige_plasser -= 1
+        else:
+            soeknad['status'] = "AVSLAG"
+
+    return render_template('soeknader.html', soeknader=soeknader)
+
+
 
 @app.route('/svar')
 def svar():

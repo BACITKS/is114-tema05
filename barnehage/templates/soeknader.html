@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Alle Søknader</h2>
+    <table border="1">
+        <tr>
+            <th>Navn Foresatt</th>
+            <th>Adresse</th>
+            <th>Telefon</th>
+            <th>Status</th>
+        </tr>
+        {% for soeknad in soeknader %}
+        <tr>
+            <td>{{ soeknad['navn_foresatt'] }}</td>
+            <td>{{ soeknad['adresse'] }}</td>
+            <td>{{ soeknad['telefon'] }}</td>
+            <td>{{ soeknad['status'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
