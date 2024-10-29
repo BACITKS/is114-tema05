@@ -170,12 +170,6 @@ def svar():
     resultat = "TILBUD" if antall_ledige_plasser > 0 else "AVSLAG"
     return render_template('svar.html', resultat=resultat)
     '''
-from flask import Flask, render_template, request
-import pandas as pd
-import altair as alt
-
-app = Flask(__name__)
-
 @app.route('/statistikk', methods=['GET', 'POST'])
 def statistikk():
     kommune = request.form.get('kommune', None)
@@ -183,33 +177,39 @@ def statistikk():
 
     if kommune:
         try:
-            # Les og prosesser Excel-fil
-            df = pd.read_excel(r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm", sheet_name='Sheet1', skiprows=4)
-            df.columns = df.columns.str.strip().str.lower()
+            # Les Excel-filen og sørg for at den finner kolonner korrekt
+            df = pd.read_excel(
+                r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm",
+                sheet_name='Sheet1', skiprows=4
+            )
             
-            # Sjekk kolonnenavn og fjern sifre fra "kommune"-kolonnen
+            # Rydd opp i kolonnenavn
+            df.columns = df.columns.str.strip().str.lower()
             if 'kommune' not in df.columns:
                 error_msg = "Kolonnen 'kommune' finnes ikke i dataene."
             else:
+                # Fjern fire første sifre i 'kommune'
                 df['kommune'] = df['kommune'].astype(str).str[5:]
                 df_kommune = df[df['kommune'].str.lower() == kommune.lower()]
 
-                # Håndter manglende data
                 if df_kommune.empty:
                     error_msg = f"Ingen data funnet for {kommune}"
                 else:
-                    # Transformér og filtrer data
-                    df_kommune = df_kommune.melt(id_vars="kommune", var_name="år", value_name="prosent").dropna()
+                    # Konverter kolonneår til rader med melt()
+                    df_kommune = df_kommune.melt(id_vars="kommune", var_name="år", value_name="prosent")
+                    
+                    # Lag grafen med Altair
                     chart = alt.Chart(df_kommune).mark_bar().encode(
                         x='år:O',
-                        y='prosent:Q',
-                        tooltip=['år', 'prosent']
+                        y='prosent:Q'
                     ).properties(title=f"Andel barn 1-2 år i barnehage i {kommune.capitalize()} (2015-2023)")
+                    
+                    # Konverter grafen til JSON for visning
                     chart_json = chart.to_json()
 
         except Exception as e:
-            error_msg = f"En feil oppstod: {e}"
-            print(error_msg)  # For debugging purposes
+            error_msg = f"En feil oppstod under behandling: {e}"
+            print(error_msg)
 
     return render_template('statistikk.html', chart_json=chart_json, kommune=kommune, error=error_msg)
 

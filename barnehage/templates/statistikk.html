@@ -21,10 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
     <script type="text/javascript">
         var chartData = {{ chart_json | safe }};
-        vegaEmbed('#chart', chartData).catch(error => {
-            console.error("Error embedding Vega chart:", error);
-            document.getElementById("chart").innerHTML = "<p style='color: red;'>En feil oppstod under lasting av grafen.</p>";
-        });
+        vegaEmbed('#chart', chartData).catch(console.error);
     </script>
 {% endif %}
 
