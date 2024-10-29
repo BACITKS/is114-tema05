@@ -177,38 +177,39 @@ def statistikk():
 
     if kommune:
         try:
-            # Les Excel-filen og sørg for at den finner kolonner korrekt
-            df = pd.read_excel(
-                r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm",
-                sheet_name='Sheet1', skiprows=4
-            )
+            # Les Excel-fil og konfigurer kolonner
+            file_path = r'C:/oblig5/is114-tema05/barnehagedata.xlsx'
+            df = pd.read_excel(file_path, sheet_name="sheet", header=2)
+            df.columns = ['Region', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
             
-            # Rydd opp i kolonnenavn
-            df.columns = df.columns.str.strip().str.lower()
-            if 'kommune' not in df.columns:
-                error_msg = "Kolonnen 'kommune' finnes ikke i dataene."
-            else:
-                # Fjern fire første sifre i 'kommune'
-                df['kommune'] = df['kommune'].astype(str).str[5:]
-                df_kommune = df[df['kommune'].str.lower() == kommune.lower()]
+            # Konverter årskolonner til numeriske verdier
+            year_columns = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
+            df[year_columns] = df[year_columns].apply(pd.to_numeric, errors='coerce')
 
-                if df_kommune.empty:
-                    error_msg = f"Ingen data funnet for {kommune}"
-                else:
-                    # Konverter kolonneår til rader med melt()
-                    df_kommune = df_kommune.melt(id_vars="kommune", var_name="år", value_name="prosent")
-                    
-                    # Lag grafen med Altair
-                    chart = alt.Chart(df_kommune).mark_bar().encode(
-                        x='år:O',
-                        y='prosent:Q'
-                    ).properties(title=f"Andel barn 1-2 år i barnehage i {kommune.capitalize()} (2015-2023)")
-                    
-                    # Konverter grafen til JSON for visning
-                    chart_json = chart.to_json()
+            # Filtrer data for valgt kommune
+            kommune_data = df[df['Region'] == kommune]
+            if kommune_data.empty:
+                error_msg = f"Ingen data funnet for {kommune}"
+            else:
+                # Transformér data til langformat
+                kommune_data_long = kommune_data.melt(id_vars='Region', value_vars=year_columns, 
+                                                      var_name='År', value_name='Prosent')
+                
+                # Lag grafen
+                chart = alt.Chart(kommune_data_long).mark_bar().encode(
+                    x=alt.X('År:N', title='År'),
+                    y=alt.Y('Prosent:Q', title='Prosent'),
+                    color=alt.Color('År:N', title='År'),
+                    tooltip=['År', 'Prosent']
+                ).properties(
+                    title=f'Prosentandel av barn i ett- og to-årsalderen i barnehagen for {kommune} (2015-2023)'
+                )
+                
+                # Konverter grafen til JSON for visning
+                chart_json = chart.to_json()
 
         except Exception as e:
-            error_msg = f"En feil oppstod under behandling: {e}"
+            error_msg = f"En feil oppstod: {e}"
             print(error_msg)
 
     return render_template('statistikk.html', chart_json=chart_json, kommune=kommune, error=error_msg)
