@@ -4,9 +4,10 @@
     <h2>Alle Søknader</h2>
     <table border="1">
         <tr>
-            <th>Navn Foresatt</th>
+            <th>Søknadsnummer</th>
+            <th>Navn</th>
             <th>Adresse</th>
-            <th>Telefon</th>
+            <th>Barnehage</th> <!-- Ny kolonne for barnehagenavn -->
             <th>Status</th>
         </tr>
         {% for soeknad in soeknader %}
@@ -14,6 +15,7 @@
             <td>{{ soeknad['navn_foresatt'] }}</td>
             <td>{{ soeknad['adresse'] }}</td>
             <td>{{ soeknad['telefon'] }}</td>
+            <td>{{ soeknad['barnehage_navn'] }}</td> <!-- Viser navnet på barnehagen -->
             <td>{{ soeknad['status'] }}</td>
         </tr>
         {% endfor %}

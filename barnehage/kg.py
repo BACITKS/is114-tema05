@@ -56,12 +56,25 @@ def hent_alle_soeknader():
     sheet = workbook.active
     soeknader = []
 
+    # Hardkodet liste med barnehageinformasjon for å matche `barnehage_id` til `barnehage_navn`
+    barnehager = {
+        1: 'Sunshine Preschool',
+        2: 'Happy Days Nursery',
+        3: '123 Learning Center',
+        4: 'ABC Kindergarten',
+        5: 'Tiny Tots Academy',
+        6: 'Giggles and Grins Childcare',
+        7: 'Playful Pals Daycare'
+    }
+
     for row in sheet.iter_rows(min_row=2, values_only=True):
+        barnehage_id = row[0]  # Første kolonne er barnehage_id
         soeknad = {
-            'barnehage_id': row[0],      # Assuming the first column is the daycare ID
-            'navn_foresatt': row[1],     # Second column is the applicant's name
-            'adresse': row[2],           # Third column is the address
-            'telefon': row[3],           
+            'barnehage_id': barnehage_id,
+            'navn_foresatt': row[1],     # Navn på foresatt
+            'adresse': row[2],           # Adresse
+            'telefon': row[3],           # Telefon
+            'barnehage_navn': barnehager.get(barnehage_id, "Ukjent")  # Hent barnehagenavn fra `barnehager`
         }
         soeknader.append(soeknad)
 
@@ -117,13 +130,43 @@ def soeknader():
     return render_template('soeknader.html', soeknader=soeknader)
 
 
-
-
 @app.route('/svar')
 def svar():
     information = session.get('information', {})
-    resultat = session.get('resultat', "AVSLAG")  # Hent resultatet fra session
-    return render_template('svar.html', data=information, resultat=resultat)
+    barnehage_id = information.get('barnehage_id')  # Hent valgt barnehage fra søknadsinfo
+    
+    # Hardkodet liste over barnehager og ledige plasser
+    barnehager = [
+        {'id': 1, 'navn': 'Sunshine Preschool', 'antall_ledige_plasser': 15},
+        {'id': 2, 'navn': 'Happy Days Nursery', 'antall_ledige_plasser': 2},
+        {'id': 3, 'navn': '123 Learning Center', 'antall_ledige_plasser': 4},
+        {'id': 4, 'navn': 'ABC Kindergarten', 'antall_ledige_plasser': 0},
+        {'id': 5, 'navn': 'Tiny Tots Academy', 'antall_ledige_plasser': 5},
+        {'id': 6, 'navn': 'Giggles and Grins Childcare', 'antall_ledige_plasser': 0},
+        {'id': 7, 'navn': 'Playful Pals Daycare', 'antall_ledige_plasser': 6},
+    ]
+
+    # Finn barnehagen som matcher `barnehage_id`
+    valgt_barnehage = next((b for b in barnehager if b['id'] == barnehage_id), None)
+
+    # Bestem resultat basert på om det er ledige plasser
+    if valgt_barnehage and valgt_barnehage['antall_ledige_plasser'] > 0:
+        resultat = "TILBUD"
+    else:
+        resultat = "AVSLAG"
+
+    return render_template('svar.html', resultat=resultat)
+
+
+
+'''
+@app.route('/svar')
+def svar():
+    information = session.get('information', {})
+    resultat = "TILBUD" if antall_ledige_plasser > 0 else "AVSLAG"
+    return render_template('svar.html', resultat=resultat)
+    '''
+
 
 
 @app.route('/commit')
