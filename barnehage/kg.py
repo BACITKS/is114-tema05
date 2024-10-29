@@ -170,8 +170,6 @@ def svar():
     return render_template('svar.html', resultat=resultat)
     '''
 
-app = Flask(__name__)
-
 @app.route('/statistikk', methods=['GET', 'POST'])
 def statistikk():
     chart_html = None
