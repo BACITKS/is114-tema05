@@ -6,6 +6,9 @@ from flask import redirect
 from flask import session
 from kgmodel import (Foresatt, Barn, Soknad, Barnehage)
 from kgcontroller import (form_to_object_soknad, insert_soknad, commit_all, select_alle_barnehager)
+import altair as alt
+import pandas as pd
+from io import StringIO
 
 app = Flask(__name__)
 app.secret_key = 'BAD_SECRET_KEY' # nødvendig for session
@@ -167,6 +170,36 @@ def svar():
     return render_template('svar.html', resultat=resultat)
     '''
 
+app = Flask(__name__)
+
+@app.route('/statistikk', methods=['GET', 'POST'])
+def statistikk():
+    chart_html = None
+    kommune = None
+
+    if request.method == 'POST':
+        kommune = request.form['kommune']
+        filsti = r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm"
+        
+        # Les data fra Excel
+        df = pd.read_excel(filsti, sheet_name='Sheet1')  # Tilpass 'Sheet1' hvis nødvendig
+        
+        # Filtrer data for valgt kommune og relevante kolonner
+        df_kommune = df[df['Kommune'] == kommune]  # Forutsetter at kolonnen heter 'Kommune'
+        df_kommune = df_kommune[['År', 'Barn_1-2_år']]  # Tilpass kolonnenavn hvis nødvendig
+
+        # Generer Altair-graf
+        chart = alt.Chart(df_kommune).mark_line().encode(
+            x='År:O',
+            y='Barn_1-2_år:Q'
+        ).properties(
+            title=f"Utvikling i antall barn (1-2 år) i {kommune}"
+        )
+
+        # Konverter graf til HTML
+        chart_html = chart.to_html()
+
+    return render_template('statistikk.html', chart_html=chart_html, kommune=kommune)
 
 
 @app.route('/commit')

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Statistikk for Barn 1-2 År</h2>
+
+<form method="post">
+    <label for="kommune">Skriv inn kommunenavn:</label>
+    <input type="text" id="kommune" name="kommune" required>
+    <button type="submit">Vis Statistikk</button>
+</form>
+
+{% if chart_html %}
+    <h3>Utvikling for kommune: {{ kommune }}</h3>
+    <div>{{ chart_html | safe }}</div>
+{% endif %}
+
+{% endblock %}
