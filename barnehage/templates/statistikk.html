@@ -14,13 +14,19 @@
 {% endif %}
 
 {% if chart_json %}
-    <h3>Utvikling for kommune: {{ kommune }}</h3>
+    <h3>Andel barn 1-2 år i barnehage i {{ kommune.capitalize() }}</h3>
     <div id="chart"></div>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
     <script type="text/javascript">
-        // Integrer Vega-Embed for å vise grafen
         var chartData = {{ chart_json | safe }};
-        vegaEmbed('#chart', chartData).catch(console.error);
+        vegaEmbed('#chart', chartData).catch(error => {
+            console.error("Error embedding Vega chart:", error);
+            document.getElementById("chart").innerHTML = "<p style='color: red;'>En feil oppstod under lasting av grafen.</p>";
+        });
     </script>
 {% endif %}
 
 {% endblock %}
+

@@ -9,6 +9,7 @@ from kgcontroller import (form_to_object_soknad, insert_soknad, commit_all, sele
 import altair as alt
 import pandas as pd
 from io import StringIO
+import numpy as np
 
 app = Flask(__name__)
 app.secret_key = 'BAD_SECRET_KEY' # nødvendig for session
@@ -169,58 +170,54 @@ def svar():
     resultat = "TILBUD" if antall_ledige_plasser > 0 else "AVSLAG"
     return render_template('svar.html', resultat=resultat)
     '''
+from flask import Flask, render_template, request
+import pandas as pd
+import altair as alt
+
+app = Flask(__name__)
 
 @app.route('/statistikk', methods=['GET', 'POST'])
 def statistikk():
-    chart_json = None
-    kommune = None
+    kommune = request.form.get('kommune', None)
+    chart_json, error_msg = None, None
 
-    if request.method == 'POST':
-        kommune = request.form['kommune']
-        print(f"Kommune valgt: {kommune}")  # Sjekk at kommunen hentes riktig
-        filsti = r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm"
-        
+    if kommune:
         try:
-            # Les data fra Excel
-            df = pd.read_excel(filsti, sheet_name='Sheet1')
-            print("Excel-fil lastet inn vellykket")
+            # Les og prosesser Excel-fil
+            df = pd.read_excel(r"C:\oblig5\is114-tema05\barnehage\ssb-barnehager-2015-2023-alder-1-2-aar.xlsm", sheet_name='Sheet1', skiprows=4)
+            df.columns = df.columns.str.strip().str.lower()
+            
+            # Sjekk kolonnenavn og fjern sifre fra "kommune"-kolonnen
+            if 'kommune' not in df.columns:
+                error_msg = "Kolonnen 'kommune' finnes ikke i dataene."
+            else:
+                df['kommune'] = df['kommune'].astype(str).str[5:]
+                df_kommune = df[df['kommune'].str.lower() == kommune.lower()]
 
-            # Filtrer data for valgt kommune
-            df_kommune = df[df['Kommune'] == kommune]
-            if df_kommune.empty:
-                print(f"Ingen data funnet for kommunen: {kommune}")
-                return render_template('statistikk.html', chart_json=None, kommune=kommune, error=f"Ingen data funnet for {kommune}")
-
-            # Konverter kolonneoverskriftene (år) til rader og sett opp data for Altair
-            df_kommune = df_kommune.melt(id_vars=["Kommune"], var_name="År", value_name="Andel barn 1-2 år i barnehage")
-            df_kommune = df_kommune.dropna()  # Fjern rader med NaN-verdier
-
-            # Generer Altair-graf
-            chart = alt.Chart(df_kommune).mark_line().encode(
-                x='År:O',
-                y='Andel barn 1-2 år i barnehage:Q',
-                tooltip=['År', 'Andel barn 1-2 år i barnehage']
-            ).properties(
-                title=f"Utvikling i andel barn (1-2 år) i barnehage i {kommune} (2015-2023)"
-            ).interactive()
-
-            # Konverter graf til JSON for å sende til HTML
-            chart_json = chart.to_json()
-            print("Graf generert og konvertert til JSON vellykket")
+                # Håndter manglende data
+                if df_kommune.empty:
+                    error_msg = f"Ingen data funnet for {kommune}"
+                else:
+                    # Transformér og filtrer data
+                    df_kommune = df_kommune.melt(id_vars="kommune", var_name="år", value_name="prosent").dropna()
+                    chart = alt.Chart(df_kommune).mark_bar().encode(
+                        x='år:O',
+                        y='prosent:Q',
+                        tooltip=['år', 'prosent']
+                    ).properties(title=f"Andel barn 1-2 år i barnehage i {kommune.capitalize()} (2015-2023)")
+                    chart_json = chart.to_json()
 
         except Exception as e:
-            print(f"En feil oppstod: {e}")
-            return render_template('statistikk.html', chart_json=None, kommune=kommune, error=str(e))
+            error_msg = f"En feil oppstod: {e}"
+            print(error_msg)  # For debugging purposes
 
-    return render_template('statistikk.html', chart_json=chart_json, kommune=kommune)
-
+    return render_template('statistikk.html', chart_json=chart_json, kommune=kommune, error=error_msg)
 
 
 @app.route('/commit')
 def commit():
     commit_all()
     return render_template('commit.html')
-
 
 
 
