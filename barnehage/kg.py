@@ -170,16 +170,17 @@ def svar():
     resultat = "TILBUD" if antall_ledige_plasser > 0 else "AVSLAG"
     return render_template('svar.html', resultat=resultat)
     '''
-@app.route('/statistikk', methods=['GET', 'POST'])
-def statistikk():
-    kommune = request.form.get('kommune', None)
+
+@app.route('/hent_statistikk', methods=['POST'])
+def hent_statistikk():
+    kommune = request.form.get('kommune')
     chart_html, error_msg = None, None
 
     if kommune:
         try:
-            # Les Excel-fil og konfigurer kolonner
-            file_path = r'C:/oblig5/is114-tema05/barnehage/barnehagedata.xlsx'
-            df = pd.read_excel(file_path, sheet_name="sheet", header=2)
+            # Les Excel-filen og sett opp data
+            file_path = r'C:/oblig5/is114-tema05/barnehagedata.xlsx'
+            df = pd.read_excel(file_path, sheet_name="Sheet1", header=2)
             df.columns = ['Region', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
             
             # Konverter årskolonner til numeriske verdier
@@ -196,7 +197,7 @@ def statistikk():
                 kommune_data_long = kommune_data.melt(id_vars='Region', value_vars=year_columns, 
                                                       var_name='År', value_name='Prosent')
                 
-                # Lag grafen og lagre som HTML-streng
+                # Lag grafen
                 chart = alt.Chart(kommune_data_long).mark_bar().encode(
                     x=alt.X('År:N', title='År'),
                     y=alt.Y('Prosent:Q', title='Prosent'),
@@ -206,14 +207,14 @@ def statistikk():
                     title=f'Prosentandel av barn i ett- og to-årsalderen i barnehagen for {kommune} (2015-2023)'
                 )
                 
-                # Lagre grafen som en HTML-streng
+                # Konverter grafen til HTML-streng
                 chart_html = chart.to_html()
-        
+
         except Exception as e:
-            error_msg = f"En feil oppstod: {e}"
+            error_msg = f"En feil oppstod under behandling: {e}"
             print(error_msg)
 
-    return render_template('statistikk.html', chart_html=Markup(chart_html), kommune=kommune, error=error_msg)
+    return jsonify(chart_html=Markup(chart_html) if chart_html else f"<p style='color:red;'>{error_msg}</p>")
 
 @app.route('/commit')
 def commit():
