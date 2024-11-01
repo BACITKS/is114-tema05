@@ -55,6 +55,40 @@ def insert_barn(b):
     
     return barn
 
+def insert_soknad(form_data):
+    """
+    Insert a new application into the soknad DataFrame.
+    Expected fields in form_data:
+    [foresatt_1, foresatt_2, barn_1, fr_barnevern, fr_sykd_familie,
+    fr_sykd_barn, fr_annet, barnehager_prioritert, sosken__i_barnehagen,
+    tidspunkt_oppstart, brutto_inntekt]
+    """
+    global soknad
+    new_id = 1 if soknad.empty else soknad['sok_id'].max() + 1
+    
+    # Create a new row with values from form_data dictionary
+    new_row = pd.DataFrame([[
+        new_id,
+        form_data.get('foresatt_1'),
+        form_data.get('foresatt_2'),
+        form_data.get('barn_1'),
+        form_data.get('fr_barnevern'),
+        form_data.get('fr_sykd_familie'),
+        form_data.get('fr_sykd_barn'),
+        form_data.get('fr_annet'),
+        form_data.get('barnehager_prioritert'),
+        form_data.get('sosken__i_barnehagen'),
+        form_data.get('tidspunkt_oppstart'),
+        form_data.get('brutto_inntekt')
+    ]], columns=soknad.columns)
+    
+    # Append the new row to soknad DataFrame
+    soknad = pd.concat([new_row, soknad], ignore_index=True)
+    
+    return soknad
+
+
+'''
 def insert_soknad(s):
     """[sok_id, foresatt_1, foresatt_2, barn_1, fr_barnevern, fr_sykd_familie,
     fr_sykd_barn, fr_annet, barnehager_prioritert, sosken__i_barnehagen,
@@ -85,7 +119,7 @@ def insert_soknad(s):
                 columns=soknad.columns), soknad], ignore_index=True)
     
     return soknad
-
+'''
 # ---------------------------
 # Read (select)
 
@@ -115,9 +149,52 @@ def select_barn(b_pnr):
     
     
 # --- Skriv kode for select_soknad her
+'''
+"""Hente fra databasen"""
+    
+    return soknad.apply(lambda r: {
+        'navn_foresatt': r['foresatt_1'],  
+        'adresse': r['foresatt_adresse'],
+        'telefon': r['foresatt_tlf'],
+        'barnehage_navn': r['barnehage_prioritert'],  
+        'status': "TILBUD" if r['status'] == 1 else "AVSLAG"  
+    }, axis=1).to_list()
+'''
 
 # ------------------
 # Update
+
+
+def select_all_soeknader():
+    try:
+        foresatt_data = pd.read_excel('kgdata.xlsx', sheet_name='foresatt', index_col=0)
+        barnehage_data = pd.read_excel('kgdata.xlsx', sheet_name='barnehage', index_col=0)
+        barn_data = pd.read_excel('kgdata.xlsx', sheet_name='barn', index_col=0)
+        soknad_data = pd.read_excel('kgdata.xlsx', sheet_name='soknad', index_col=0)
+
+        # Convert columns to consistent types for merging
+        soknad_data['barnehager_prioritert'] = soknad_data['barnehager_prioritert'].astype(str)
+        barnehage_data['barnehage_id'] = barnehage_data['barnehage_id'].astype(str)
+
+        # Merge without suffixes
+        merged_data = soknad_data.merge(foresatt_data, left_on='foresatt_1', right_on='foresatt_id', how='left')
+        merged_data = merged_data.merge(barnehage_data, left_on='barnehager_prioritert', right_on='barnehage_id', how='left')
+        merged_data = merged_data.merge(barn_data, left_on='barn_1', right_on='barn_id', how='left')
+        
+        # Format for the template
+        soeknader_data = merged_data.apply(lambda r: {
+            'soeknadsnummer': r['sok_id'],
+            'navn_foresatt': r['foresatt_navn'],
+            'adresse': r['foresatt_adresse'],
+            'barnehage_navn': r['barnehage_navn'],
+            'status': "TILBUD" if r['status'] == 1 else "AVSLAG"
+        }, axis=1).to_list()
+
+        return soeknader_data
+
+    except Exception as e:
+        print(f"Error reading soeknader from kgdata.xlsx: {e}")
+        return []
 
 
 # ------------------
