@@ -10,6 +10,7 @@ import altair as alt
 import pandas as pd
 from io import StringIO
 import numpy as np
+import json
 
 app = Flask(__name__)
 app.secret_key = 'BAD_SECRET_KEY' # nødvendig for session
@@ -99,7 +100,32 @@ def hent_alle_barnehager():
         barnehager.append(barnehage)
 
     return barnehager
-    
+
+@app.route('/svar')
+def svar():
+    # Leser data fra Excel og konverterer til liste av dictionaries
+    file_path = r'C:/oblig5/is114-tema05/barnehage/kgdata.xlsx'
+    df = pd.read_excel(file_path, sheet_name='Sheet1')
+    information = df.to_dict(orient='records')  # Konverterer til liste av dictionaries
+
+    # Sender dataene til `svar.html`
+    return render_template('svar.html', data=information)
+
+@app.route('/soeknader')
+def soeknader():
+    # Leser data fra Excel og konverterer til liste av dictionaries
+    file_path = r'C:/oblig5/is114-tema05/barnehage/kgdata.xlsx'
+    df = pd.read_excel(file_path, sheet_name='Sheet1')
+    soeknader = df.to_dict(orient='records')  # Konverterer til liste av dictionaries
+
+    # Sender dataene til `soeknader.html`
+    return render_template('soeknader.html', soeknader=soeknader)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+'''
 @app.route('/soeknader')
 def soeknader():
     # Define the daycare centers with their available spots
@@ -160,7 +186,7 @@ def svar():
         resultat = "AVSLAG"
 
     return render_template('svar.html', resultat=resultat)
-
+'''
 
 
 '''
