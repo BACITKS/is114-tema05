@@ -2,4 +2,24 @@
 
 {% block content %}
 <p>Alle endringene er skrevet til kgdata.xlsx!</p>
+
+<h2>Alle Lagrede Søknader</h2>
+<table border="1">
+    <tr>
+        <th>Søknadsnummer</th>
+        <th>Navn</th>
+        <th>Adresse</th>
+        <th>Barnehage</th>
+        <th>Status</th>
+    </tr>
+    {% for data in all_data %}
+    <tr>
+        <td>{{ data['soeknadsnummer'] }}</td>
+        <td>{{ data['navn_foresatt'] }}</td>
+        <td>{{ data['adresse'] }}</td>
+        <td>{{ data['barnehage_navn'] }}</td>
+        <td>{{ data['status'] }}</td>
+    </tr>
+    {% endfor %}
+</table>
 {% endblock %}

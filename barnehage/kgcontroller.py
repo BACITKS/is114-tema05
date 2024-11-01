@@ -164,29 +164,33 @@ def select_barn(b_pnr):
 # ------------------
 # Update
 
-
 def select_all_soeknader():
     try:
+        # Load each sheet and set index columns
         foresatt_data = pd.read_excel('kgdata.xlsx', sheet_name='foresatt', index_col=0)
         barnehage_data = pd.read_excel('kgdata.xlsx', sheet_name='barnehage', index_col=0)
         barn_data = pd.read_excel('kgdata.xlsx', sheet_name='barn', index_col=0)
         soknad_data = pd.read_excel('kgdata.xlsx', sheet_name='soknad', index_col=0)
 
-        # Convert columns to consistent types for merging
+        # Convert columns for merging
         soknad_data['barnehager_prioritert'] = soknad_data['barnehager_prioritert'].astype(str)
         barnehage_data['barnehage_id'] = barnehage_data['barnehage_id'].astype(str)
 
-        # Merge without suffixes
+        # Add 'status' if missing
+        if 'status' not in soknad_data.columns:
+            soknad_data['status'] = 0  # Default to AVSLAG
+
+        # Merge all sheets to create a comprehensive DataFrame
         merged_data = soknad_data.merge(foresatt_data, left_on='foresatt_1', right_on='foresatt_id', how='left')
         merged_data = merged_data.merge(barnehage_data, left_on='barnehager_prioritert', right_on='barnehage_id', how='left')
         merged_data = merged_data.merge(barn_data, left_on='barn_1', right_on='barn_id', how='left')
-        
-        # Format for the template
+
+        # Format the data for rendering
         soeknader_data = merged_data.apply(lambda r: {
             'soeknadsnummer': r['sok_id'],
-            'navn_foresatt': r['foresatt_navn'],
-            'adresse': r['foresatt_adresse'],
-            'barnehage_navn': r['barnehage_navn'],
+            'navn_foresatt': r['foresatt_navn'] if pd.notna(r['foresatt_navn']) else 'Ikke oppgitt',
+            'adresse': r['foresatt_adresse'] if pd.notna(r['foresatt_adresse']) else 'Ikke oppgitt',
+            'barnehage_navn': r['barnehage_navn'] if pd.notna(r['barnehage_navn']) else 'Ikke oppgitt',
             'status': "TILBUD" if r['status'] == 1 else "AVSLAG"
         }, axis=1).to_list()
 
@@ -195,6 +199,7 @@ def select_all_soeknader():
     except Exception as e:
         print(f"Error reading soeknader from kgdata.xlsx: {e}")
         return []
+
 
 
 # ------------------

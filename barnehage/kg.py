@@ -28,14 +28,30 @@ from kgcontroller import form_to_object_soknad, insert_soknad, commit_all
 @app.route('/behandle', methods=['GET', 'POST'])
 def behandle():
     if request.method == 'POST':
-        # Process the form data
         form_data = request.form.to_dict()
-        insert_soknad(form_data)  # Insert the application
-        commit_all()  # Save to kgdata.xlsx
-        return redirect(url_for('soeknader'))  # Redirect to applications list
+        
+        # Logic to determine if the user gets a TILBUD or AVSLAG
+        antall_ledige_plasser = 5  # Placeholder for available spots, replace with actual logic if available
+        har_fortrinnsrett = any([
+            form_data.get('fortrinnsrett_barnevern') == 'on',
+            form_data.get('fortrinnsrett_sykdom_familien') == 'on',
+            form_data.get('fortrinnsrett_sykdom_barnet') == 'on',
+            form_data.get('fortrinnsrett_annet') == 'on'
+        ])
+        
+        # Determine the result based on available spots and priority
+        if antall_ledige_plasser > 0 or har_fortrinnsrett:
+            resultat = "TILBUD"
+        else:
+            resultat = "AVSLAG"
+        
+        # Insert application and save to Excel
+        insert_soknad(form_data)
+        commit_all()
 
-    # Render the application form for GET requests
-    return render_template('soknad.html')
+        return render_template('svar.html', resultat=resultat)
+    
+    return render_template('soknad.html') 
 
 
 @app.route('/soeknader')
@@ -53,8 +69,10 @@ def svar():
 
 @app.route('/commit')
 def commit():
-    commit_all()
-    return render_template('commit.html')
+    from kgcontroller import select_all_soeknader 
+    all_data = select_all_soeknader()  
+    return render_template('commit.html', all_data=all_data)
+
 
 @app.route('/statistikk', methods=['GET', 'POST'])
 def statistikk():
@@ -67,8 +85,8 @@ def statistikk():
 
         if kommune:
             try:
-                # Replace this with your actual data processing for the selected municipality
-                data = pd.DataFrame({  # Example data
+                
+                data = pd.DataFrame({  
                     'Year': [2021, 2022, 2023],
                     'Percentage': [40, 45, 50]
                 })
