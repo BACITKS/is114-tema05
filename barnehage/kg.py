@@ -10,7 +10,6 @@ import altair as alt
 import pandas as pd
 from io import StringIO
 import numpy as np
-import json
 
 app = Flask(__name__)
 app.secret_key = 'BAD_SECRET_KEY' # nødvendig for session
@@ -100,32 +99,7 @@ def hent_alle_barnehager():
         barnehager.append(barnehage)
 
     return barnehager
-
-@app.route('/svar')
-def svar():
-    # Leser data fra Excel og konverterer til liste av dictionaries
-    file_path = r'C:/oblig5/is114-tema05/barnehage/kgdata.xlsx'
-    df = pd.read_excel(file_path, sheet_name='Sheet1')
-    information = df.to_dict(orient='records')  # Konverterer til liste av dictionaries
-
-    # Sender dataene til `svar.html`
-    return render_template('svar.html', data=information)
-
-@app.route('/soeknader')
-def soeknader():
-    # Leser data fra Excel og konverterer til liste av dictionaries
-    file_path = r'C:/oblig5/is114-tema05/barnehage/kgdata.xlsx'
-    df = pd.read_excel(file_path, sheet_name='Sheet1')
-    soeknader = df.to_dict(orient='records')  # Konverterer til liste av dictionaries
-
-    # Sender dataene til `soeknader.html`
-    return render_template('soeknader.html', soeknader=soeknader)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-'''
+    
 @app.route('/soeknader')
 def soeknader():
     # Define the daycare centers with their available spots
@@ -186,7 +160,7 @@ def svar():
         resultat = "AVSLAG"
 
     return render_template('svar.html', resultat=resultat)
-'''
+
 
 
 '''
@@ -196,17 +170,16 @@ def svar():
     resultat = "TILBUD" if antall_ledige_plasser > 0 else "AVSLAG"
     return render_template('svar.html', resultat=resultat)
     '''
-
-@app.route('/hent_statistikk', methods=['POST'])
-def hent_statistikk():
-    kommune = request.form.get('kommune')
+@app.route('/statistikk', methods=['GET', 'POST'])
+def statistikk():
+    kommune = request.form.get('kommune', None)
     chart_html, error_msg = None, None
 
     if kommune:
         try:
-            # Les Excel-filen og sett opp data
-            file_path = r'C:/oblig5/is114-tema05/barnehagedata.xlsx'
-            df = pd.read_excel(file_path, sheet_name="Sheet1", header=2)
+            # Les Excel-fil og konfigurer kolonner
+            file_path = r'C:/oblig5/is114-tema05/barnehage/barnehagedata.xlsx'
+            df = pd.read_excel(file_path, sheet_name="sheet", header=2)
             df.columns = ['Region', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
             
             # Konverter årskolonner til numeriske verdier
@@ -223,7 +196,7 @@ def hent_statistikk():
                 kommune_data_long = kommune_data.melt(id_vars='Region', value_vars=year_columns, 
                                                       var_name='År', value_name='Prosent')
                 
-                # Lag grafen
+                # Lag grafen og lagre som HTML-streng
                 chart = alt.Chart(kommune_data_long).mark_bar().encode(
                     x=alt.X('År:N', title='År'),
                     y=alt.Y('Prosent:Q', title='Prosent'),
@@ -233,14 +206,14 @@ def hent_statistikk():
                     title=f'Prosentandel av barn i ett- og to-årsalderen i barnehagen for {kommune} (2015-2023)'
                 )
                 
-                # Konverter grafen til HTML-streng
+                # Lagre grafen som en HTML-streng
                 chart_html = chart.to_html()
-
+        
         except Exception as e:
-            error_msg = f"En feil oppstod under behandling: {e}"
+            error_msg = f"En feil oppstod: {e}"
             print(error_msg)
 
-    return jsonify(chart_html=Markup(chart_html) if chart_html else f"<p style='color:red;'>{error_msg}</p>")
+    return render_template('statistikk.html', chart_html=Markup(chart_html), kommune=kommune, error=error_msg)
 
 @app.route('/commit')
 def commit():

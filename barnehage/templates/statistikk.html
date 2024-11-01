@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Statistikk for Barn 1-2 År</h2>
 
-<form id="kommuneForm">
+<form method="post">
     <label for="kommune">Skriv inn kommunenavn:</label>
     <input type="text" id="kommune" name="kommune" required>
     <button type="submit">Vis Statistikk</button>
@@ -13,30 +13,9 @@
     <p style="color: red;">{{ error }}</p>
 {% endif %}
 
-<div id="chartContainer" style="width: 100%; height: 500px; border: 1px solid #ccc; margin-top: 20px;">
-    <!-- Grafen vil bli lastet inn her -->
-</div>
+{% if chart_html %}
+    <h3>Prosentandel av barn i barnehage i {{ kommune.capitalize() }}</h3>
+    <div>{{ chart_html | safe }}</div>
+{% endif %}
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $("#kommuneForm").on("submit", function(e) {
-        e.preventDefault(); // Forhindre siden fra å laste inn på nytt
-
-        // Hent kommunenavn fra skjemaet
-        var kommune = $("#kommune").val();
-
-        // Send AJAX-forespørsel til serveren
-        $.ajax({
-            url: "/hent_statistikk",
-            type: "POST",
-            data: { kommune: kommune },
-            success: function(response) {
-                $("#chartContainer").html(response.chart_html); // Sett inn grafen i ruten
-            },
-            error: function(xhr, status, error) {
-                $("#chartContainer").html("<p style='color: red;'>En feil oppstod: " + error + "</p>");
-            }
-        });
-    });
-</script>
 {% endblock %}

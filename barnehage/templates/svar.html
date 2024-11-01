@@ -1,26 +1,10 @@
 {% extends 'base.html' %}
-
+<!-- Skriv inn din kode her for å returnere svar for bruksscenario om svar på en søknad. --> 
 {% block content %}
-<h2>Resultat av Søknad</h2>
-
-{% if data %}
-    <table>
-        <tr>
-            <th>Søknadsnummer</th>
-            <th>Navn</th>
-            <th>Adresse</th>
-            <th>Status</th>
-        </tr>
-        {% for søknad in data %}
-        <tr>
-            <td>{{ søknad['søknadsnummer'] }}</td>
-            <td>{{ søknad['navn'] }}</td>
-            <td>{{ søknad['adresse'] }}</td>
-            <td>{{ søknad['status'] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+<h2>Resultat av søknad</h2>
+{% if resultat == "TILBUD" %}
+    <p>Gratulerer! Du har fått tilbud om plass i barnehagen.</p>
 {% else %}
-    <p>Ingen søknader funnet.</p>
+    <p>Beklager, det er for øyeblikket ingen ledige plasser. Søknaden er avslått.</p>
 {% endif %}
 {% endblock %}
