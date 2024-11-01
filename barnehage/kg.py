@@ -179,7 +179,7 @@ def statistikk():
         try:
             # Les Excel-fil og konfigurer kolonner
             file_path = r'C:/oblig5/is114-tema05/barnehage/barnehagedata.xlsx'
-            df = pd.read_excel(file_path, sheet_name="sheet", header=2)
+            df = pd.read_excel(file_path, sheet_name="Sheet1", header=2, skiprows=4)
             df.columns = ['Region', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
             
             # Konverter årskolonner til numeriske verdier
