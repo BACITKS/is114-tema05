@@ -56,7 +56,7 @@ def behandle():
 
 @app.route('/soeknader')
 def soeknader():
-    soeknader_data = select_all_soeknader()  # Fetch applications data
+    soeknader_data = select_all_soeknader()  
     return render_template('soeknader.html', soeknader=soeknader_data)
 
 
