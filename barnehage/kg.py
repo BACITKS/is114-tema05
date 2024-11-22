@@ -157,7 +157,8 @@ def statistikk():
 
 @app.route('/soknad')
 def soknad():
-    return render_template('soknad.html')
+    barnehager = select_alle_barnehager()  # Henter liste over alle barnehager
+    return render_template('soknad.html', barnehager=barnehager)
 
 
 """
