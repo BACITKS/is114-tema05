@@ -55,37 +55,45 @@ def insert_barn(b):
     
     return barn
 
+
+import pandas as pd
+
 def insert_soknad(form_data):
-    """
-    Insert a new application into the soknad DataFrame.
-    Expected fields in form_data:
-    [foresatt_1, foresatt_2, barn_1, fr_barnevern, fr_sykd_familie,
-    fr_sykd_barn, fr_annet, barnehager_prioritert, sosken__i_barnehagen,
-    tidspunkt_oppstart, brutto_inntekt]
-    """
     global soknad
+    
+    # Angi en korrekt filsti
+    excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
+    
+    # Finn nytt søknads-ID
     new_id = 1 if soknad.empty else soknad['sok_id'].max() + 1
     
-    # Create a new row with values from form_data dictionary
+    # Opprett en ny rad med data fra skjemaet
     new_row = pd.DataFrame([[
         new_id,
-        form_data.get('foresatt_1'),
-        form_data.get('foresatt_2'),
-        form_data.get('barn_1'),
-        form_data.get('fr_barnevern'),
-        form_data.get('fr_sykd_familie'),
-        form_data.get('fr_sykd_barn'),
-        form_data.get('fr_annet'),
-        form_data.get('barnehager_prioritert'),
-        form_data.get('sosken__i_barnehagen'),
-        form_data.get('tidspunkt_oppstart'),
-        form_data.get('brutto_inntekt')
+        form_data.get('navn_forelder_1'),
+        form_data.get('navn_forelder_2', ''),
+        form_data.get('personnummer_barnet_1'),
+        form_data.get('fortrinnsrett_barnevern') == 'on',
+        form_data.get('fortrinnsrett_sykdom_i_familien') == 'on',
+        form_data.get('fortrinnsrett_sykdome_paa_barnet') == 'on',
+        form_data.get('fortrinssrett_annet', ''),
+        form_data.get('liste_over_barnehager_prioritert_5'),
+        form_data.get('har_sosken_som_gaar_i_barnehagen') == 'on',
+        form_data.get('tidspunkt_for_oppstart'),
+        form_data.get('brutto_inntekt_husholdning')
     ]], columns=soknad.columns)
-    
-    # Append the new row to soknad DataFrame
+
+    # Legg til den nye raden i soknad DataFrame
     soknad = pd.concat([new_row, soknad], ignore_index=True)
     
-    return soknad
+    # Lagre tilbake til Excel-filen med riktig path
+    try:
+        soknad.to_excel(excel_path, sheet_name='soknad', index=False)
+        print("Data er lagret!")
+    except Exception as e:
+        print(f"Feil ved lagring til Excel: {e}")
+
+
 
 
 '''
@@ -166,26 +174,26 @@ def select_barn(b_pnr):
 
 def select_all_soeknader():
     try:
-        # Load each sheet and set index columns
+        
         foresatt_data = pd.read_excel('kgdata.xlsx', sheet_name='foresatt', index_col=0)
         barnehage_data = pd.read_excel('kgdata.xlsx', sheet_name='barnehage', index_col=0)
         barn_data = pd.read_excel('kgdata.xlsx', sheet_name='barn', index_col=0)
         soknad_data = pd.read_excel('kgdata.xlsx', sheet_name='soknad', index_col=0)
 
-        # Convert columns for merging
+        
         soknad_data['barnehager_prioritert'] = soknad_data['barnehager_prioritert'].astype(str)
         barnehage_data['barnehage_id'] = barnehage_data['barnehage_id'].astype(str)
 
-        # Add 'status' if missing
+        
         if 'status' not in soknad_data.columns:
-            soknad_data['status'] = 0  # Default to AVSLAG
+            soknad_data['status'] = 0  # Default 
 
-        # Merge all sheets to create a comprehensive DataFrame
+        
         merged_data = soknad_data.merge(foresatt_data, left_on='foresatt_1', right_on='foresatt_id', how='left')
         merged_data = merged_data.merge(barnehage_data, left_on='barnehager_prioritert', right_on='barnehage_id', how='left')
         merged_data = merged_data.merge(barn_data, left_on='barn_1', right_on='barn_id', how='left')
 
-        # Format the data for rendering
+        
         soeknader_data = merged_data.apply(lambda r: {
             'soeknadsnummer': r['sok_id'],
             'navn_foresatt': r['foresatt_navn'] if pd.notna(r['foresatt_navn']) else 'Ikke oppgitt',

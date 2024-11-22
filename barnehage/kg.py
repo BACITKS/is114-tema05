@@ -23,40 +23,45 @@ def barnehager():
     information = select_alle_barnehager()
     return render_template('barnehager.html', data=information)
 
-from kgcontroller import form_to_object_soknad, insert_soknad, commit_all
 
-@app.route('/behandle', methods=['GET', 'POST'])
+@app.route('/behandle', methods=['POST'])
 def behandle():
-    if request.method == 'POST':
-        form_data = request.form.to_dict()
-        
-        # Logic to determine if the user gets a TILBUD or AVSLAG
-        antall_ledige_plasser = 5  # Placeholder for available spots, replace with actual logic if available
-        har_fortrinnsrett = any([
-            form_data.get('fortrinnsrett_barnevern') == 'on',
-            form_data.get('fortrinnsrett_sykdom_familien') == 'on',
-            form_data.get('fortrinnsrett_sykdom_barnet') == 'on',
-            form_data.get('fortrinnsrett_annet') == 'on'
-        ])
-        
-        # Determine the result based on available spots and priority
-        if antall_ledige_plasser > 0 or har_fortrinnsrett:
-            resultat = "TILBUD"
-        else:
-            resultat = "AVSLAG"
-        
-        # Insert application and save to Excel
-        insert_soknad(form_data)
-        commit_all()
+    form_data = request.form.to_dict()
 
-        return render_template('svar.html', resultat=resultat)
+    # Last inn barnehagedata fra Excel
+    barnehager = pd.read_excel('kgdata.xlsx', sheet_name='barnehage')
     
-    return render_template('soknad.html') 
+    
+    valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
+    barnehage_info = barnehager[barnehager['barnehage_navn'] == valgt_barnehage]
+
+    # Hvis vi ikke finner barnehagen, returner Avslag umiddelbart
+    if barnehage_info.empty:
+        return render_template('svar.html', resultat="AVSLAG")
+    
+    ledige_plasser = barnehage_info['barnehage_ledige_plasser'].values[0]
+
+    # Sjekk fortrinnsrett
+    har_fortrinnsrett = any([
+        form_data.get('fortrinnsrett_barnevern') == 'on',
+        form_data.get('fortrinnsrett_sykdom_i_familien') == 'on',
+        form_data.get('fortrinnsrett_sykdome_paa_barnet') == 'on'
+    ])
+
+    # Logikken: Tilbud gis bare hvis det er ledige plasser eller fortrinnsrett
+    if ledige_plasser > 0 or har_fortrinnsrett:
+        resultat = "TILBUD"
+    else:
+        resultat = "AVSLAG"
+
+    # Returner resultatet til brukeren
+    return render_template('svar.html', resultat=resultat)
+
 
 
 @app.route('/soeknader')
 def soeknader():
-    soeknader_data = select_all_soeknader()  # Fetch applications data
+    soeknader_data = select_all_soeknader()  
     return render_template('soeknader.html', soeknader=soeknader_data)
 
 
@@ -69,9 +74,9 @@ def svar():
 
 @app.route('/commit')
 def commit():
-    from kgcontroller import select_all_soeknader 
-    all_data = select_all_soeknader()  
+    all_data = pd.read_excel('kgdata.xlsx', sheet_name=None)  # Leser alle ark
     return render_template('commit.html', all_data=all_data)
+
 
 
 @app.route('/statistikk', methods=['GET', 'POST'])
@@ -91,11 +96,22 @@ def statistikk():
                     'Percentage': [40, 45, 50]
                 })
 
-                chart = alt.Chart(data).mark_line().encode(
-                    x='Year:O',
-                    y='Percentage:Q'
+                chart = alt.Chart(data).mark_line(
+                    point=True,
+                    strokeWidth=3,
+                    color='#1f77b4'
+                ).encode(
+                    x=alt.X('Year:O', title='År'),
+                    y=alt.Y('Percentage:Q', title='Prosentandel', scale=alt.Scale(domain=[0, 100])),
+                    tooltip=['Year', 'Percentage']
                 ).properties(
-                    title=f"Barnehage Prosentandel i {kommune}"
+                    title={
+                        'text': f'Barnehage Prosentandel i {kommune}',
+                        'fontSize': 16,
+                        'fontWeight': 'bold'
+                    },
+                    width=600,
+                    height=400
                 )
                 chart_html = chart.to_html()
 

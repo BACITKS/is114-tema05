@@ -1,34 +1,39 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<h2>Søknad om Barnehageplass</h2>
 <form method="POST" action="/behandle"> 
+    <!-- Foreldre 1 -->
     <label for="navn_forelder_1">Navn - Forelder 1:</label> 
-    <input type="text" id="navn_forelder_1" name="navn_forelder_1" required />
-    <br> 
-    <label for="navn_forelder_2">Navn - Forelder 2:</label>
-    <input type="text" id="navn_forelder_2" name="navn_forelder_2" />
-    <br> 
+    <input type="text" id="navn_forelder_1" name="navn_forelder_1" required placeholder="Fullt navn for forelder 1"/><br> 
+    
     <label for="adresse_forelder_1">Adresse - Forelder 1:</label>
-    <input type="text" id="adresse_forelder_1" name="adresse_forelder_1" required /><br>
-
-    <label for="adresse_forelder_2">Adresse - Forelder 2:</label> 
-    <input type="text" id="adresse_forelder_2" name="adresse_forelder_2" /><br>
+    <input type="text" id="adresse_forelder_1" name="adresse_forelder_1" required placeholder="Adresse for forelder 1"/><br>
 
     <label for="tlf_nr_forelder_1">Telefonnummer - Forelder 1:</label> 
-    <input type="tel" id="tlf_nr_forelder_1" name="tlf_nr_forelder_1" required /><br>
-
-    <label for="tlf_nr_forelder_2">Telefonnummer - Forelder 2:</label> 
-    <input type="tel" id="tlf_nr_forelder_2" name="tlf_nr_forelder_2" /><br>
+    <input type="tel" id="tlf_nr_forelder_1" name="tlf_nr_forelder_1" required placeholder="Telefonnummer for forelder 1"/><br>
 
     <label for="personnummer_forelder_1">Personnummer - Forelder 1:</label>
-    <input type="text" id="personnummer_forelder_1" name="personnummer_forelder_1" required /><br>
+    <input type="text" id="personnummer_forelder_1" name="personnummer_forelder_1" required placeholder="Personnummer for forelder 1"/><br>
 
-    <label for="personnummer_forelder_2">Personnummer - Forelder 2:</label> 
-    <input type="text" id="personnummer_forelder_2" name="personnummer_forelder_2" /><br>
+    <!-- Foreldre 2 -->
+    <label for="navn_forelder_2">Navn - Forelder 2 (Valgfritt):</label>
+    <input type="text" id="navn_forelder_2" name="navn_forelder_2" placeholder="Fullt navn for forelder 2"/><br> 
 
+    <label for="adresse_forelder_2">Adresse - Forelder 2 (Valgfritt):</label> 
+    <input type="text" id="adresse_forelder_2" name="adresse_forelder_2" placeholder="Adresse for forelder 2"/><br>
+
+    <label for="tlf_nr_forelder_2">Telefonnummer - Forelder 2 (Valgfritt):</label> 
+    <input type="tel" id="tlf_nr_forelder_2" name="tlf_nr_forelder_2" placeholder="Telefonnummer for forelder 2"/><br>
+
+    <label for="personnummer_forelder_2">Personnummer - Forelder 2 (Valgfritt):</label> 
+    <input type="text" id="personnummer_forelder_2" name="personnummer_forelder_2" placeholder="Personnummer for forelder 2"/><br>
+
+    <!-- Barn -->
     <label for="personnummer_barnet_1">Personnummer - Barn 1:</label>
-    <input type="text" id="personnummer_barnet_1" name="personnummer_barnet_1" required /><br>
+    <input type="text" id="personnummer_barnet_1" name="personnummer_barnet_1" required placeholder="Personnummer for barnet"/><br>
 
+    <!-- Diverse fortrinnsrett -->
     <fieldset>
         <legend>Diverse fortrinnsrett</legend>
         <label for="fortrinnsrett_barnevern">Fortrinnsrett - Barnevern:</label>
@@ -40,12 +45,13 @@
         <label for="fortrinnsrett_sykdome_paa_barnet">Fortrinnsrett - Sykdom på Barnet:</label>
         <input type="checkbox" id="fortrinnsrett_sykdome_paa_barnet" name="fortrinnsrett_sykdome_paa_barnet" /><br>
 
-        <label for="fortrinssrett_annet">Fortrinnsrett - Annet:</label>
-        <input type="text" id="fortrinssrett_annet" name="fortrinssrett_annet" /><br>
+        <label for="fortrinssrett_annet">Fortrinnsrett - Annet (Valgfritt):</label>
+        <input type="text" id="fortrinssrett_annet" name="fortrinssrett_annet" placeholder="Beskriv annen fortrinnsrett"/><br>
     </fieldset>
-    <br>
+
+    <!-- Barnehage og søsken -->
     <label for="liste_over_barnehager_prioritert_5">Liste over Barnehager (Prioritert):</label>
-    <input type="text" id="liste_over_barnehager_prioritert_5" name="liste_over_barnehager_prioritert_5" required /><br>
+    <input type="text" id="liste_over_barnehager_prioritert_5" name="liste_over_barnehager_prioritert_5" required placeholder="Prioritert barnehage"/><br>
 
     <label for="tidspunkt_for_oppstart">Tidspunkt for Oppstart:</label>
     <input type="date" id="tidspunkt_for_oppstart" name="tidspunkt_for_oppstart" required /><br>
@@ -53,8 +59,12 @@
     <label for="har_sosken_som_gaar_i_barnehagen">Har Søsken som Går i Barnehagen:</label> 
     <input type="checkbox" id="har_sosken_som_gaar_i_barnehagen" name="har_sosken_som_gaar_i_barnehagen" /><br>
 
+    <!-- Økonomi -->
     <label for="brutto_inntekt_husholdning">Brutto Inntekt Husholdning:</label>
-    <input type="number" id="brutto_inntekt_husholdning" name="brutto_inntekt_husholdning" required /><br><br>
+    <input type="number" id="brutto_inntekt_husholdning" name="brutto_inntekt_husholdning" required placeholder="Brutto inntekt"/><br><br>
+    
+    <!-- Send skjema -->
     <input type="submit" value="Send søknad"> 
 </form>
 {% endblock %}
+
