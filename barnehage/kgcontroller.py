@@ -59,15 +59,27 @@ def insert_barn(b):
 import pandas as pd
 
 def insert_soknad(form_data):
-    global soknad
+    global soknad, barnehage
     
-    # Angi en korrekt filsti
     excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
     
     # Finn nytt søknads-ID
     new_id = 1 if soknad.empty else soknad['sok_id'].max() + 1
     
-    # Opprett en ny rad med data fra skjemaet
+    # Sjekk om barnehagen har ledige plasser
+    valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
+    try:
+        ledige_plasser = barnehage.loc[
+            barnehage['barnehage_navn'] == valgt_barnehage, 
+            'barnehage_ledige_plasser'
+        ].iloc[0]
+    except:
+        ledige_plasser = 0  # Hvis barnehagen ikke finnes
+    
+    # Bestem status basert på ledige plasser
+    status = 1 if ledige_plasser > 0 else 0
+    
+    # Opprett en ny rad med data
     new_row = pd.DataFrame([[
         new_id,
         form_data.get('navn_forelder_1'),
@@ -77,21 +89,33 @@ def insert_soknad(form_data):
         form_data.get('fortrinnsrett_sykdom_i_familien') == 'on',
         form_data.get('fortrinnsrett_sykdome_paa_barnet') == 'on',
         form_data.get('fortrinssrett_annet', ''),
-        form_data.get('liste_over_barnehager_prioritert_5'),
+        valgt_barnehage,
         form_data.get('har_sosken_som_gaar_i_barnehagen') == 'on',
         form_data.get('tidspunkt_for_oppstart'),
-        form_data.get('brutto_inntekt_husholdning')
-    ]], columns=soknad.columns)
+        form_data.get('brutto_inntekt_husholdning'),
+        status  # Legg til status
+    ]], columns=list(soknad.columns) + ['status'])
 
-    # Legg til den nye raden i soknad DataFrame
+    # Oppdater søknader
     soknad = pd.concat([new_row, soknad], ignore_index=True)
     
-    # Lagre tilbake til Excel-filen med riktig path
+    # Oppdater antall ledige plasser hvis søknaden godkjennes
+    if status == 1:
+        barnehage.loc[
+            barnehage['barnehage_navn'] == valgt_barnehage, 
+            'barnehage_ledige_plasser'
+        ] -= 1
+    
+    # Lagre endringene
     try:
-        soknad.to_excel(excel_path, sheet_name='soknad', index=False)
+        with pd.ExcelWriter(excel_path, mode='a', if_sheet_exists='replace') as writer:
+            soknad.to_excel(writer, sheet_name='soknad', index=False)
+            barnehage.to_excel(writer, sheet_name='barnehage', index=False)
         print("Data er lagret!")
+        return status
     except Exception as e:
         print(f"Feil ved lagring til Excel: {e}")
+        return 0
 
 
 
@@ -174,40 +198,30 @@ def select_barn(b_pnr):
 
 def select_all_soeknader():
     try:
+        excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
         
-        foresatt_data = pd.read_excel('kgdata.xlsx', sheet_name='foresatt', index_col=0)
-        barnehage_data = pd.read_excel('kgdata.xlsx', sheet_name='barnehage', index_col=0)
-        barn_data = pd.read_excel('kgdata.xlsx', sheet_name='barn', index_col=0)
-        soknad_data = pd.read_excel('kgdata.xlsx', sheet_name='soknad', index_col=0)
-
+        # Les data fra Excel
+        soknad_data = pd.read_excel(excel_path, sheet_name='soknad')
         
-        soknad_data['barnehager_prioritert'] = soknad_data['barnehager_prioritert'].astype(str)
-        barnehage_data['barnehage_id'] = barnehage_data['barnehage_id'].astype(str)
-
-        
+        # Hvis status-kolonnen ikke finnes, legg den til
         if 'status' not in soknad_data.columns:
-            soknad_data['status'] = 0  # Default 
-
+            soknad_data['status'] = 0  # Standard verdi er avslag
         
-        merged_data = soknad_data.merge(foresatt_data, left_on='foresatt_1', right_on='foresatt_id', how='left')
-        merged_data = merged_data.merge(barnehage_data, left_on='barnehager_prioritert', right_on='barnehage_id', how='left')
-        merged_data = merged_data.merge(barn_data, left_on='barn_1', right_on='barn_id', how='left')
-
+        # Konverter til liste av ordbøker
+        soeknader = []
+        for _, row in soknad_data.iterrows():
+            soeknader.append({
+                'soeknadsnummer': row['sok_id'],
+                'navn_foresatt': row['foresatt_1'],
+                'adresse': row.get('adresse_forelder_1', 'Ikke oppgitt'),
+                'barnehage_navn': row['barnehager_prioritert'],
+                'status': "TILBUD" if row.get('status', 0) == 1 else "AVSLAG"
+            })
         
-        soeknader_data = merged_data.apply(lambda r: {
-            'soeknadsnummer': r['sok_id'],
-            'navn_foresatt': r['foresatt_navn'] if pd.notna(r['foresatt_navn']) else 'Ikke oppgitt',
-            'adresse': r['foresatt_adresse'] if pd.notna(r['foresatt_adresse']) else 'Ikke oppgitt',
-            'barnehage_navn': r['barnehage_navn'] if pd.notna(r['barnehage_navn']) else 'Ikke oppgitt',
-            'status': "TILBUD" if r['status'] == 1 else "AVSLAG"
-        }, axis=1).to_list()
-
-        return soeknader_data
-
+        return soeknader
     except Exception as e:
-        print(f"Error reading soeknader from kgdata.xlsx: {e}")
+        print(f"Feil ved lesing av søknader: {e}")
         return []
-
 
 
 # ------------------

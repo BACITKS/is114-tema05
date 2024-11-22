@@ -3,7 +3,7 @@ import pandas as pd
 
 
 
-kgdata = pd.ExcelFile('kgdata.xlsx')
+kgdata = pd.ExcelFile(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx')
 barnehage = pd.read_excel(kgdata, 'barnehage', index_col=0)
 forelder = pd.read_excel(kgdata, 'foresatt', index_col=0)
 barn = pd.read_excel(kgdata, 'barn', index_col=0)

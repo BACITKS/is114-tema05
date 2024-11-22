@@ -4,9 +4,16 @@
 <h2>Statistikk for Barn 1-2 År</h2>
 
 <form method="post">
-    <label for="kommune">Skriv inn kommunenavn:</label>
-    <input type="text" id="kommune" name="kommune" required>
-    <button type="submit">Vis Statistikk</button>
+    <div style="margin: 20px 0;">
+        <label for="kommune">Velg kommune:</label>
+        <select id="kommune" name="kommune" required style="width: 200px; padding: 8px; margin-left: 10px;">
+            <option value="">-- Velg kommune --</option>
+            {% for kommune in kommuner %}
+                <option value="{{ kommune }}">{{ kommune }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" style="margin-left: 10px; padding: 8px 16px;">Vis Statistikk</button>
+    </div>
 </form>
 
 {% if error %}
@@ -14,7 +21,7 @@
 {% endif %}
 
 {% if chart_html %}
-    <h3>Prosentandel av barn i barnehage i {{ kommune.capitalize() }}</h3>
+    <h3>Barnehagedekning i {{ kommune }}</h3>
     <div>{{ chart_html | safe }}</div>
 {% endif %}
 

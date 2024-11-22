@@ -29,7 +29,7 @@ def behandle():
     form_data = request.form.to_dict()
 
     # Last inn barnehagedata fra Excel
-    barnehager = pd.read_excel('kgdata.xlsx', sheet_name='barnehage')
+    barnehager = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name='barnehage')
     
     
     valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
@@ -58,10 +58,9 @@ def behandle():
     return render_template('svar.html', resultat=resultat)
 
 
-
 @app.route('/soeknader')
 def soeknader():
-    soeknader_data = select_all_soeknader()  
+    soeknader_data = select_all_soeknader()
     return render_template('soeknader.html', soeknader=soeknader_data)
 
 
@@ -74,7 +73,7 @@ def svar():
 
 @app.route('/commit')
 def commit():
-    all_data = pd.read_excel('kgdata.xlsx', sheet_name=None)  # Leser alle ark
+    all_data = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name=None)  # Leser alle ark
     return render_template('commit.html', all_data=all_data)
 
 
@@ -85,40 +84,80 @@ def statistikk():
     chart_html = None
     error = None
 
-    if request.method == 'POST':
-        kommune = request.form.get('kommune')
+    try:
+        # Les Excel-filen (behold din eksisterende filbane)
+        file_path = r'C:\oblig5\is114-tema05\barnehage\barnehagedata.xlsm'
+        df = pd.read_excel(file_path)
+        
+        # Sett kolonnenavn og fjern overskriftsrader som før
+        df.columns = ['Region'] + list(range(2015, 2024))
+        df = df.iloc[3:].reset_index(drop=True)
+        
+        # Hent liste over kommuner for nedtrekkslisten
+        kommuner = df['Region'].dropna().unique().tolist()
 
-        if kommune:
-            try:
-                
-                data = pd.DataFrame({  
-                    'Year': [2021, 2022, 2023],
-                    'Percentage': [40, 45, 50]
-                })
+        # Hvis en kommune er valgt (POST request)
+        if request.method == 'POST':
+            kommune = request.form.get('kommune')
+            if kommune:
+                # Filtrer data for valgt kommune
+                kommune_data = df[df['Region'] == kommune]
+                if not kommune_data.empty:
+                    # Konverter til format som Altair kan bruke
+                    kommune_data_long = pd.melt(
+                        kommune_data,
+                        id_vars=['Region'],
+                        value_vars=list(range(2015, 2024)),
+                        var_name='År',
+                        value_name='Prosent'
+                    )
+                    
+                    # Fjern eventuelle ugyldige verdier
+                    kommune_data_long = kommune_data_long[kommune_data_long['Prosent'] != '.']
+                    kommune_data_long['Prosent'] = pd.to_numeric(kommune_data_long['Prosent'])
+                    
+                    # Lag alt chart
+                    chart = alt.Chart(kommune_data_long).mark_line(
+                        point=True,
+                        color='green',  # Grønn strek
+                        strokeWidth=2   # Tykk strek
+                    ).encode(
+                        x='År:O',
+                        y=alt.Y('Prosent:Q', scale=alt.Scale(domain=[0, 100])),
+                        tooltip=['År', 'Prosent']
+                    ).properties(
+                        title=f'Barnehageprosent i {kommune}',
+                        width=800,      # Brede graf
+                        height=400      # Høye graf
+                    ).configure_axis(
+                        labelFont='Arial',
+                        titleFont='Arial',
+                        labelFontWeight='bold',
+                        titleFontWeight='bold'
+                    ).configure_title(
+                        font='Arial',
+                        fontSize=20,
+                        fontWeight='bold'
+                    )
+                    
+                    chart_html = chart.to_html()
+                else:
+                    error = f"Ingen data funnet for {kommune}"
 
-                chart = alt.Chart(data).mark_line(
-                    point=True,
-                    strokeWidth=3,
-                    color='#1f77b4'
-                ).encode(
-                    x=alt.X('Year:O', title='År'),
-                    y=alt.Y('Percentage:Q', title='Prosentandel', scale=alt.Scale(domain=[0, 100])),
-                    tooltip=['Year', 'Percentage']
-                ).properties(
-                    title={
-                        'text': f'Barnehage Prosentandel i {kommune}',
-                        'fontSize': 16,
-                        'fontWeight': 'bold'
-                    },
-                    width=600,
-                    height=400
-                )
-                chart_html = chart.to_html()
+        return render_template('statistikk.html', 
+                            kommune=kommune,
+                            chart_html=chart_html, 
+                            error=error,
+                            kommuner=kommuner)  # Viktig! Send kommunelisten til templaten
 
-            except Exception as e:
-                error = f"Kunne ikke generere statistikk for {kommune}: {e}"
+    except Exception as e:
+        error = f"En feil oppstod: {str(e)}"
+        return render_template('statistikk.html', error=error, kommuner=[])
 
-    return render_template('statistikk.html', kommune=kommune, chart_html=chart_html, error=error)
+
+@app.route('/soknad')
+def soknad():
+    return render_template('soknad.html')
 
 
 """
