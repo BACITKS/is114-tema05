@@ -1,7 +1,7 @@
 # kgcontroller module
 import pandas as pd
 import numpy as np
-from dbexcel import *
+import dbexcel as db
 from kgmodel import *
 
 
@@ -56,61 +56,72 @@ def insert_barn(b):
     return barn
 
 
-import pandas as pd
-
+'''
 def insert_soknad(form_data):
-    global soknad, barnehage
-    
-    excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
-    
-    new_id = 1 if soknad.empty else soknad['sok_id'].max() + 1
-    
+    new_id = 1 if db.soknad.empty else db.soknad['sok_id'].max() + 1
     valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
-    try:
-        ledige_plasser = barnehage.loc[
-            barnehage['barnehage_navn'] == valgt_barnehage, 
-            'barnehage_ledige_plasser'
-        ].iloc[0]
-    except:
-        ledige_plasser = 0  # Hvis barnehagen ikke finnes
-    
-    status = 1 if ledige_plasser > 0 else 0
-    
-    new_row = pd.DataFrame([[
-        new_id,
-        form_data.get('navn_forelder_1'),
-        form_data.get('navn_forelder_2', ''),
-        form_data.get('personnummer_barnet_1'),
-        form_data.get('fortrinnsrett_barnevern') == 'on',
-        form_data.get('fortrinnsrett_sykdom_i_familien') == 'on',
-        form_data.get('fortrinnsrett_sykdome_paa_barnet') == 'on',
-        form_data.get('fortrinssrett_annet', ''),
-        valgt_barnehage,
-        form_data.get('har_sosken_som_gaar_i_barnehagen') == 'on',
-        form_data.get('tidspunkt_for_oppstart'),
-        form_data.get('brutto_inntekt_husholdning'),
-        status  # Legg til status
-    ]], columns=list(soknad.columns) + ['status'])
+    ledige_plasser = db.barnehage.loc[
+        db.barnehage['barnehage_navn'] == valgt_barnehage, 
+        'barnehage_ledige_plasser'
+    ].iloc[0]
 
-    #Oppdater
-    soknad = pd.concat([new_row, soknad], ignore_index=True)
-    
-    if status == 1:
-        barnehage.loc[
-            barnehage['barnehage_navn'] == valgt_barnehage, 
+    new_row = pd.DataFrame([[...]], columns=db.soknad.columns)
+    db.soknad = pd.concat([new_row, db.soknad], ignore_index=True)
+
+    if ledige_plasser > 0:
+        db.barnehage.loc[
+            db.barnehage['barnehage_navn'] == valgt_barnehage, 
             'barnehage_ledige_plasser'
         ] -= 1
-    
-    # Lagre endringene
-    try:
-        with pd.ExcelWriter(excel_path, mode='a', if_sheet_exists='replace') as writer:
-            soknad.to_excel(writer, sheet_name='soknad', index=False)
-            barnehage.to_excel(writer, sheet_name='barnehage', index=False)
-        print("Data er lagret!")
-        return status
-    except Exception as e:
-        print(f"Feil ved lagring til Excel: {e}")
-        return 0
+
+    db.commit_all()
+'''
+def insert_soknad(form_data):
+    # Oppdater soknad DataFrame fra Excel for å sikre at vi har de nyeste dataene
+    db.oppdater_data()  # Sørg for at soknad DataFrame er oppdatert
+
+    # Sjekk om 'sok_id' kolonnen eksisterer
+    if 'sok_id' not in db.soknad.columns:
+        raise ValueError("Kolonnen 'sok_id' finnes ikke i soknad DataFrame.")
+
+    new_id = 1 if db.soknad.empty else db.soknad['sok_id'].max() + 1
+    valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
+
+    # Sjekk om 'barnehage_ledige_plasser' kolonnen eksisterer
+    if 'barnehage_ledige_plasser' not in db.barnehage.columns:
+        raise ValueError("Kolonnen 'barnehage_ledige_plasser' finnes ikke i barnehage DataFrame.")
+
+    ledige_plasser = db.barnehage.loc[
+        db.barnehage['barnehage_navn'] == valgt_barnehage, 
+        'barnehage_ledige_plasser'
+    ].iloc[0]
+
+    # Opprett ny søknad
+    new_row = pd.DataFrame([{
+        "sok_id": new_id,
+        "foresatt_1": form_data.get('navn_forelder_1'),
+        "foresatt_2": form_data.get('navn_forelder_2'),
+        "barn_1": form_data.get('personnummer_barnet_1'),
+        "fr_barnevern": form_data.get('fortrinnsrett_barnevern') == 'on',
+        "fr_sykd_familie": form_data.get('fortrinnsrett_sykdom_i_familien') == 'on',
+        "fr_sykd_barn": form_data.get('fortrinnsrett_sykdome_paa_barnet') == 'on',
+        "fr_annet": form_data.get('fortrinssrett_annet', ''),
+        "barnehager_prioritert": valgt_barnehage,
+        "sosken__i_barnehagen": form_data.get('har_sosken_som_gaar_i_barnehagen') == 'on',
+        "tidspunkt_oppstart": form_data.get('tidspunkt_for_oppstart'),
+        "brutto_inntekt": form_data.get('brutto_inntekt_husholdning'),
+    }])
+
+    db.soknad = pd.concat([db.soknad, new_row], ignore_index=True)
+
+    if ledige_plasser > 0:
+        db.barnehage.loc[
+            db.barnehage['barnehage_navn'] == valgt_barnehage, 
+            'barnehage_ledige_plasser'
+        ] -= 1
+
+    # Lagre endringene til Excel via db.commit_all
+    db.commit_all()
 
 
 
@@ -152,11 +163,13 @@ def insert_soknad(s):
 
 def select_alle_barnehager():
     """Returnerer en liste med alle barnehager definert i databasen dbexcel."""
-    return barnehage.apply(lambda r: Barnehage(r['barnehage_id'],
-                             r['barnehage_navn'],
-                             r['barnehage_antall_plasser'],
-                             r['barnehage_ledige_plasser']),
-         axis=1).to_list()
+    return db.barnehage.apply(lambda r: Barnehage(
+        r['barnehage_id'],
+        r['barnehage_navn'],
+        r['barnehage_antall_plasser'],
+        r['barnehage_ledige_plasser']
+    ), axis=1).to_list()
+
 
 def select_foresatt(f_navn):
     """OBS! Ignorerer duplikater"""
@@ -190,7 +203,7 @@ def select_barn(b_pnr):
 
 # ------------------
 # Update
-
+ 
 def select_all_soeknader():
     try:
         excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
@@ -221,13 +234,21 @@ def select_all_soeknader():
 
 
 # ----- Persistent lagring ------
+
+'''
 def commit_all():
-    """Skriver alle dataframes til excel"""
-    with pd.ExcelWriter('kgdata.xlsx', mode='a', if_sheet_exists='replace') as writer:  
-        forelder.to_excel(writer, sheet_name='foresatt')
-        barnehage.to_excel(writer, sheet_name='barnehage')
-        barn.to_excel(writer, sheet_name='barn')
-        soknad.to_excel(writer, sheet_name='soknad')
+    try:
+        print("Skriver til Excel...")
+        with pd.ExcelWriter('kgdata.xlsx', mode='w', engine='openpyxl') as writer:
+            db.forelder.to_excel(writer, sheet_name='foresatt', index=False)
+            db.barnehage.to_excel(writer, sheet_name='barnehage', index=False)
+            db.barn.to_excel(writer, sheet_name='barn', index=False)
+            db.soknad.to_excel(writer, sheet_name='soknad', index=False)
+        print("Lagring fullført!")
+    except Exception as e:
+        print(f"Feil under lagring: {e}")
+'''
+
         
 # --- Diverse hjelpefunksjoner ---
 def form_to_object_soknad(sd):

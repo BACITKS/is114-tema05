@@ -5,9 +5,10 @@ from flask import request
 from flask import redirect
 from flask import session
 from kgmodel import (Foresatt, Barn, Soknad, Barnehage)
-from kgcontroller import (form_to_object_soknad, insert_soknad, commit_all, select_alle_barnehager, select_all_soeknader)
+from kgcontroller import (form_to_object_soknad, insert_soknad, select_alle_barnehager, select_all_soeknader)
 import pandas as pd
 import altair as alt
+import dbexcel as db
 
 
 
@@ -23,40 +24,42 @@ def barnehager():
     information = select_alle_barnehager()
     return render_template('barnehager.html', data=information)
 
-
 @app.route('/behandle', methods=['POST'])
 def behandle():
     form_data = request.form.to_dict()
 
-    
-    barnehager = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name='barnehage')
-    
-    
+    # Oppdater søknad i minne via insert_soknad
+    from kgcontroller import insert_soknad
+    insert_soknad(form_data)
+
+    # Returner svar til brukeren
     valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
-    barnehage_info = barnehager[barnehager['barnehage_navn'] == valgt_barnehage]
+    resultat = "TILBUD" if db.barnehage.loc[
+        db.barnehage['barnehage_navn'] == valgt_barnehage, 
+        'barnehage_ledige_plasser'
+    ].iloc[0] > 0 else "AVSLAG"
 
-    
-    if barnehage_info.empty:
-        return render_template('svar.html', resultat="AVSLAG")
-    
-    ledige_plasser = barnehage_info['barnehage_ledige_plasser'].values[0]
-
-    # Sjekk fortrinnsrett
-    har_fortrinnsrett = any([
-        form_data.get('fortrinnsrett_barnevern') == 'on',
-        form_data.get('fortrinnsrett_sykdom_i_familien') == 'on',
-        form_data.get('fortrinnsrett_sykdome_paa_barnet') == 'on'
-    ])
-
-    # Logikken: Tilbud gis bare hvis det er ledige plasser eller fortrinnsrett
-    if ledige_plasser > 0 or har_fortrinnsrett:
-        resultat = "TILBUD"
-    else:
-        resultat = "AVSLAG"
-
-    # Returner resultatet til brukeren
     return render_template('svar.html', resultat=resultat)
 
+
+'''
+@app.route('/behandle', methods=['POST'])
+def behandle():
+    form_data = request.form.to_dict()
+
+    # Oppdater søknad i minne via insert_soknad
+    from kgcontroller import insert_soknad
+    insert_soknad(form_data)
+
+    # Returner svar til brukeren
+    valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
+    resultat = "TILBUD" if db.barnehage.loc[
+        db.barnehage['barnehage_navn'] == valgt_barnehage, 
+        'barnehage_ledige_plasser'
+    ].iloc[0] > 0 else "AVSLAG"
+
+    return render_template('svar.html', resultat=resultat)
+'''
 
 @app.route('/soeknader')
 def soeknader():
@@ -73,9 +76,10 @@ def svar():
 
 @app.route('/commit')
 def commit():
-    all_data = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name=None)  # Leser alle ark
-    return render_template('commit.html', all_data=all_data)
+    db.commit_all()  # Skriver alle endringer til Excel
 
+    all_data = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name=None)
+    return render_template('commit.html', all_data=all_data['soknad'].to_dict(orient='records'))
 
 
 @app.route('/statistikk', methods=['GET', 'POST'])
@@ -155,13 +159,9 @@ def statistikk():
 
 @app.route('/soknad')
 def soknad():
-<<<<<<< HEAD
     # Hent barnehage-listen fra Excel
     barnehager_df = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name='barnehage')
     barnehager = barnehager_df.to_dict('records')
-=======
-    barnehager = select_alle_barnehager()  
->>>>>>> faab69ccfb6365d2284ad8c37782c86459099322
     return render_template('soknad.html', barnehager=barnehager)
 
 
