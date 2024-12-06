@@ -28,14 +28,14 @@ def barnehager():
 def behandle():
     form_data = request.form.to_dict()
 
-    # Last inn barnehagedata fra Excel
+    
     barnehager = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name='barnehage')
     
     
     valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
     barnehage_info = barnehager[barnehager['barnehage_navn'] == valgt_barnehage]
 
-    # Hvis vi ikke finner barnehagen, returner Avslag umiddelbart
+    
     if barnehage_info.empty:
         return render_template('svar.html', resultat="AVSLAG")
     
@@ -100,10 +100,8 @@ def statistikk():
         if request.method == 'POST':
             kommune = request.form.get('kommune')
             if kommune:
-                # Filtrer data for valgt kommune
                 kommune_data = df[df['Region'] == kommune]
                 if not kommune_data.empty:
-                    # Konverter til format som Altair kan bruke
                     kommune_data_long = pd.melt(
                         kommune_data,
                         id_vars=['Region'],
@@ -157,7 +155,9 @@ def statistikk():
 
 @app.route('/soknad')
 def soknad():
-    barnehager = select_alle_barnehager()  # Henter liste over alle barnehager
+    # Hent barnehage-listen fra Excel
+    barnehager_df = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name='barnehage')
+    barnehager = barnehager_df.to_dict('records')
     return render_template('soknad.html', barnehager=barnehager)
 
 
