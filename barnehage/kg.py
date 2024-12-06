@@ -67,7 +67,7 @@ def soeknader():
 @app.route('/svar')
 def svar():
     information = session.get('information', {})
-    resultat = session.get('resultat', "AVSLAG")  # Hent resultatet fra session
+    resultat = session.get('resultat', "AVSLAG")  
     return render_template('svar.html', data=information, resultat=resultat)
 
 
@@ -85,18 +85,18 @@ def statistikk():
     error = None
 
     try:
-        # Les Excel-filen (behold din eksisterende filbane)
+        
         file_path = r'C:\oblig5\is114-tema05\barnehage\barnehagedata.xlsm'
         df = pd.read_excel(file_path)
         
-        # Sett kolonnenavn og fjern overskriftsrader som før
+       
         df.columns = ['Region'] + list(range(2015, 2024))
         df = df.iloc[3:].reset_index(drop=True)
         
-        # Hent liste over kommuner for nedtrekkslisten
+       
         kommuner = df['Region'].dropna().unique().tolist()
 
-        # Hvis en kommune er valgt (POST request)
+        
         if request.method == 'POST':
             kommune = request.form.get('kommune')
             if kommune:
@@ -110,11 +110,11 @@ def statistikk():
                         value_name='Prosent'
                     )
                     
-                    # Fjern eventuelle ugyldige verdier
+                    #Fjern drittverdier
                     kommune_data_long = kommune_data_long[kommune_data_long['Prosent'] != '.']
                     kommune_data_long['Prosent'] = pd.to_numeric(kommune_data_long['Prosent'])
                     
-                    # Lag alt chart
+                    #altair
                     chart = alt.Chart(kommune_data_long).mark_line(
                         point=True,
                         color='green',  # Grønn strek
@@ -146,7 +146,7 @@ def statistikk():
                             kommune=kommune,
                             chart_html=chart_html, 
                             error=error,
-                            kommuner=kommuner)  # Viktig! Send kommunelisten til templaten
+                            kommuner=kommuner)  
 
     except Exception as e:
         error = f"En feil oppstod: {str(e)}"
@@ -155,9 +155,13 @@ def statistikk():
 
 @app.route('/soknad')
 def soknad():
+<<<<<<< HEAD
     # Hent barnehage-listen fra Excel
     barnehager_df = pd.read_excel(r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx', sheet_name='barnehage')
     barnehager = barnehager_df.to_dict('records')
+=======
+    barnehager = select_alle_barnehager()  
+>>>>>>> faab69ccfb6365d2284ad8c37782c86459099322
     return render_template('soknad.html', barnehager=barnehager)
 
 

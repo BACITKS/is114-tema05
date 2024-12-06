@@ -63,10 +63,8 @@ def insert_soknad(form_data):
     
     excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
     
-    # Finn nytt søknads-ID
     new_id = 1 if soknad.empty else soknad['sok_id'].max() + 1
     
-    # Sjekk om barnehagen har ledige plasser
     valgt_barnehage = form_data.get('liste_over_barnehager_prioritert_5')
     try:
         ledige_plasser = barnehage.loc[
@@ -76,10 +74,8 @@ def insert_soknad(form_data):
     except:
         ledige_plasser = 0  # Hvis barnehagen ikke finnes
     
-    # Bestem status basert på ledige plasser
     status = 1 if ledige_plasser > 0 else 0
     
-    # Opprett en ny rad med data
     new_row = pd.DataFrame([[
         new_id,
         form_data.get('navn_forelder_1'),
@@ -96,10 +92,9 @@ def insert_soknad(form_data):
         status  # Legg til status
     ]], columns=list(soknad.columns) + ['status'])
 
-    # Oppdater søknader
+    #Oppdater
     soknad = pd.concat([new_row, soknad], ignore_index=True)
     
-    # Oppdater antall ledige plasser hvis søknaden godkjennes
     if status == 1:
         barnehage.loc[
             barnehage['barnehage_navn'] == valgt_barnehage, 
@@ -200,14 +195,11 @@ def select_all_soeknader():
     try:
         excel_path = r'C:\oblig5\is114-tema05\barnehage\kgdata.xlsx'
         
-        # Les data fra Excel
         soknad_data = pd.read_excel(excel_path, sheet_name='soknad')
         
-        # Hvis status-kolonnen ikke finnes, legg den til
         if 'status' not in soknad_data.columns:
             soknad_data['status'] = 0  # Standard verdi er avslag
         
-        # Konverter til liste av ordbøker
         soeknader = []
         for _, row in soknad_data.iterrows():
             soeknader.append({
